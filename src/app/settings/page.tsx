@@ -1,40 +1,36 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useAppStore } from "@/store";
+import React, { useEffect, useState } from "react";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import SidebarComponent from "@/components/Sidebar";
-import { Settings, Server, Cpu, Globe, Loader2, CheckCircle2, ShieldAlert, Heartbeat } from "lucide-react";
+import {
+  Bell,
+  CheckCircle2,
+  Download,
+  Languages,
+  Loader2,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 
 export default function SettingsPage() {
   useAuthRedirect();
-  const { user } = useAppStore();
 
-  const [vpsUrl, setVpsUrl] = useState("http://localhost:8000");
-  const [vpsToken, setVpsToken] = useState("");
-  const [whisperModel, setWhisperModel] = useState("base");
-  const [ollamaModel, setOllamaModel] = useState("llama3");
   const [language, setLanguage] = useState("auto");
-  
+  const [defaultExport, setDefaultExport] = useState("pdf");
+  const [autoOpenReport, setAutoOpenReport] = useState(true);
+  const [emailDigest, setEmailDigest] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<"unchecked" | "loading" | "healthy" | "unreachable">("unchecked");
 
-  // Load settings from LocalStorage
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedUrl = localStorage.getItem("viddy_vps_url");
-      const savedToken = localStorage.getItem("viddy_vps_token");
-      const savedWhisper = localStorage.getItem("viddy_whisper_model");
-      const savedOllama = localStorage.getItem("viddy_ollama_model");
-      const savedLang = localStorage.getItem("viddy_language");
+    if (typeof window === "undefined") return;
 
-      if (savedUrl) setVpsUrl(savedUrl);
-      if (savedToken) setVpsToken(savedToken);
-      if (savedWhisper) setWhisperModel(savedWhisper);
-      if (savedOllama) setOllamaModel(savedOllama);
-      if (savedLang) setLanguage(savedLang);
-    }
+    setLanguage(localStorage.getItem("viddy_language") || "auto");
+    setDefaultExport(localStorage.getItem("viddy_default_export") || "pdf");
+    setAutoOpenReport(localStorage.getItem("viddy_auto_open_report") !== "false");
+    setEmailDigest(localStorage.getItem("viddy_email_digest") === "true");
   }, []);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -42,195 +38,152 @@ export default function SettingsPage() {
     setIsSaving(true);
     setSuccess(false);
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      localStorage.setItem("viddy_vps_url", vpsUrl);
-      localStorage.setItem("viddy_vps_token", vpsToken);
-      localStorage.setItem("viddy_whisper_model", whisperModel);
-      localStorage.setItem("viddy_ollama_model", ollamaModel);
-      localStorage.setItem("viddy_language", language);
-      setSuccess(true);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const checkVpsHealth = async () => {
-    setHealthStatus("loading");
-    try {
-      // Direct call to health check endpoint on the configured VPS
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
-      const res = await fetch(`${vpsUrl}/health`, {
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (res.ok) {
-        setHealthStatus("healthy");
-      } else {
-        setHealthStatus("unreachable");
-      }
-    } catch (err) {
-      console.error(err);
-      setHealthStatus("unreachable");
-    }
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    localStorage.setItem("viddy_language", language);
+    localStorage.setItem("viddy_default_export", defaultExport);
+    localStorage.setItem("viddy_auto_open_report", String(autoOpenReport));
+    localStorage.setItem("viddy_email_digest", String(emailDigest));
+    setSuccess(true);
+    setIsSaving(false);
   };
 
   return (
     <div className="flex-1 flex bg-background min-h-[calc(100vh-4rem)]">
-      {/* Sidebar Navigation */}
       <SidebarComponent />
 
-      {/* Main Container */}
-      <div className="flex-1 p-6 md:p-8 overflow-y-auto max-w-4xl mx-auto w-full space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary" />
-            <span>Workspace Settings</span>
-          </h1>
-          <p className="text-sm text-zinc-400 mt-1">Configure your speech transcription engines, LLM models, and AI nodes.</p>
+      <div className="flex-1 p-6 md:p-8 overflow-y-auto max-w-5xl mx-auto w-full space-y-8">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-primary">
+            <Settings className="h-5 w-5" />
+            <span className="text-xs font-bold uppercase tracking-wider">Workspace preferences</span>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Video analysis settings</h1>
+            <p className="text-sm text-zinc-400 mt-1">
+              Tune how Viddy presents reports, exports, and notifications for your analyzed videos.
+            </p>
+          </div>
         </div>
 
         {success && (
           <div className="p-4 text-xs rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-400 flex items-center gap-2 animate-fade-in">
             <CheckCircle2 className="h-4.5 w-4.5 shrink-0" />
-            <span>Settings saved successfully! Local cache updated.</span>
+            <span>Preferences saved for this workspace.</span>
           </div>
         )}
 
-        <form onSubmit={handleSaveSettings} className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          
-          {/* COLUMN 1: AI NODE CONFIG */}
-          <div className="rounded-2xl border border-white/5 bg-zinc-900/10 p-6 space-y-6">
-            <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2 border-b border-white/5 pb-3">
-              <Server className="h-4.5 w-4.5 text-primary" />
-              <span>AI VPS Endpoint</span>
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">VPS Server Address</label>
-                <input
-                  type="url"
-                  required
-                  value={vpsUrl}
-                  onChange={(e) => setVpsUrl(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-xs rounded-xl py-2.5 px-4 outline-none text-white transition-colors"
-                />
-              </div>
+        <form onSubmit={handleSaveSettings} className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+          <div className="space-y-4">
+            <section className="rounded-xl border border-white/5 bg-zinc-900/20 p-5 space-y-5">
+              <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                <Languages className="h-4.5 w-4.5 text-secondary" />
+                <span>Transcript Preferences</span>
+              </h2>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">VPS Security Token</label>
-                <input
-                  type="password"
-                  placeholder="Enter AI_VPS_TOKEN if configured..."
-                  value={vpsToken}
-                  onChange={(e) => setVpsToken(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-xs rounded-xl py-2.5 px-4 outline-none text-white transition-colors"
-                />
-              </div>
-
-              {/* Health Diagnostics Panel */}
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={checkVpsHealth}
-                  className="w-full text-center rounded-lg bg-zinc-800 hover:bg-zinc-750 text-white py-2 text-xs font-semibold border border-zinc-700 transition-all cursor-pointer"
-                >
-                  Test Connection Health
-                </button>
-
-                {healthStatus === "loading" && (
-                  <div className="flex items-center justify-center gap-1.5 text-zinc-400 text-xs mt-3">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    <span>Querying VPS /health status...</span>
-                  </div>
-                )}
-                {healthStatus === "healthy" && (
-                  <div className="flex items-center justify-center gap-1.5 text-emerald-400 text-xs mt-3 bg-emerald-500/5 border border-emerald-500/10 p-2 rounded-lg">
-                    <CheckCircle2 className="h-4.5 w-4.5" />
-                    <span>VPS online! Whisper and Llama 3 ready.</span>
-                  </div>
-                )}
-                {healthStatus === "unreachable" && (
-                  <div className="flex items-center justify-center gap-1.5 text-red-400 text-xs mt-3 bg-red-500/5 border border-red-500/10 p-2 rounded-lg">
-                    <ShieldAlert className="h-4.5 w-4.5" />
-                    <span>Unreachable. Check firewall port 8000.</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* COLUMN 2: TRANSCRIPTION & LLM MODEL TUNING */}
-          <div className="rounded-2xl border border-white/5 bg-zinc-900/10 p-6 space-y-6">
-            <h3 className="text-sm font-bold text-white tracking-wide flex items-center gap-2 border-b border-white/5 pb-3">
-              <Cpu className="h-4.5 w-4.5 text-secondary" />
-              <span>Model Selection</span>
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">Transcription Model</label>
-                <select
-                  value={whisperModel}
-                  onChange={(e) => setWhisperModel(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-xs rounded-xl py-2.5 px-4 outline-none text-white transition-colors cursor-pointer"
-                >
-                  <option value="tiny">Whisper Tiny (High speed, CPU-only)</option>
-                  <option value="base">Whisper Base (Recommended for CPU)</option>
-                  <option value="small">Whisper Small (High accuracy)</option>
-                  <option value="medium">Whisper Medium (GPU recommended)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">Ollama LLM Model</label>
-                <select
-                  value={ollamaModel}
-                  onChange={(e) => setOllamaModel(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-xs rounded-xl py-2.5 px-4 outline-none text-white transition-colors cursor-pointer"
-                >
-                  <option value="llama3">Llama 3 (8B parameters)</option>
-                  <option value="mistral">Mistral (7B parameters)</option>
-                  <option value="llama3.1">Llama 3.1 (Latest)</option>
-                  <option value="phi3">Phi 3 (Microsoft small model)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">Language Detection</label>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  Spoken Language
+                </label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-xs rounded-xl py-2.5 px-4 outline-none text-white transition-colors cursor-pointer"
+                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-sm rounded-lg py-2.5 px-3 outline-none text-white transition-colors cursor-pointer"
                 >
-                  <option value="auto">Auto-Detect spoken language</option>
+                  <option value="auto">Auto-detect for every video</option>
                   <option value="en">English</option>
+                  <option value="hi">Hindi</option>
+                  <option value="ta">Tamil</option>
                   <option value="es">Spanish</option>
                   <option value="fr">French</option>
                   <option value="de">German</option>
                 </select>
               </div>
-            </div>
+            </section>
+
+            <section className="rounded-xl border border-white/5 bg-zinc-900/20 p-5 space-y-5">
+              <h2 className="text-sm font-bold text-white tracking-wide flex items-center gap-2">
+                <Download className="h-4.5 w-4.5 text-accent" />
+                <span>Report Defaults</span>
+              </h2>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  Preferred Export Format
+                </label>
+                <select
+                  value={defaultExport}
+                  onChange={(e) => setDefaultExport(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 focus:border-primary/50 text-sm rounded-lg py-2.5 px-3 outline-none text-white transition-colors cursor-pointer"
+                >
+                  <option value="pdf">PDF report</option>
+                  <option value="markdown">Markdown notes</option>
+                  <option value="json">Raw JSON</option>
+                  <option value="csv">Transcript CSV</option>
+                </select>
+              </div>
+
+              <label className="flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-zinc-950/40 px-4 py-3 cursor-pointer">
+                <span>
+                  <span className="block text-sm font-semibold text-white">Open report after analysis</span>
+                  <span className="block text-xs text-zinc-500 mt-0.5">Jump straight into the finished timeline view.</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={autoOpenReport}
+                  onChange={(e) => setAutoOpenReport(e.target.checked)}
+                  className="h-4 w-4 accent-primary"
+                />
+              </label>
+
+              <label className="flex items-center justify-between gap-4 rounded-lg border border-white/5 bg-zinc-950/40 px-4 py-3 cursor-pointer">
+                <span>
+                  <span className="block text-sm font-semibold text-white">Email analysis digest</span>
+                  <span className="block text-xs text-zinc-500 mt-0.5">Receive a compact summary when a video completes.</span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={emailDigest}
+                  onChange={(e) => setEmailDigest(e.target.checked)}
+                  className="h-4 w-4 accent-primary"
+                />
+              </label>
+            </section>
           </div>
 
-          {/* Submit Footer */}
-          <div className="md:col-span-2 flex justify-end">
+          <aside className="rounded-xl border border-white/5 bg-zinc-900/20 p-5 space-y-4">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Managed processing is built in</h2>
+              <p className="text-xs text-zinc-400 leading-relaxed mt-1">
+                Video transcription, keyframes, summaries, and chat context are handled automatically by Viddy.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              <div className="rounded-lg bg-zinc-950/50 border border-white/5 p-3">
+                <Sparkles className="h-4 w-4 text-primary mb-2" />
+                <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Pipeline</p>
+                <p className="text-xs text-white font-semibold mt-1">Automatic</p>
+              </div>
+              <div className="rounded-lg bg-zinc-950/50 border border-white/5 p-3">
+                <Bell className="h-4 w-4 text-secondary mb-2" />
+                <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Alerts</p>
+                <p className="text-xs text-white font-semibold mt-1">Optional</p>
+              </div>
+            </div>
+          </aside>
+
+          <div className="lg:col-span-2 flex justify-end">
             <button
               type="submit"
               disabled={isSaving}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/95 text-white px-6 py-3 text-xs font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary hover:bg-primary/95 text-white px-6 py-3 text-xs font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
             >
               {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>Save Settings Toggles</span>
+              <span>Save Preferences</span>
             </button>
           </div>
-
         </form>
       </div>
     </div>

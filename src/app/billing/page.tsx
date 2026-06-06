@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useAppStore } from "@/store";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import SidebarComponent from "@/components/Sidebar";
-import { Coins, Zap, Check, Loader2, Sparkles, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Coins, Zap, Check, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function BillingPage() {
   useAuthRedirect();
@@ -53,7 +53,7 @@ export default function BillingPage() {
         "120 full video analyses",
         "RAG video chat access",
         "PDF & Markdown exports",
-        "Priority VPS queue speed",
+        "Priority analysis queue speed",
         "Frame screenshot downloads",
         "Lifetime support",
       ],
@@ -88,9 +88,10 @@ export default function BillingPage() {
       setCredits(data.user.credits);
       
       setSuccessMsg(`Successfully credited ${creditsAmount} credits to your account for purchasing the ${planName}!`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Checkout failed. Please try again.";
       console.error(err);
-      setError(err.message || "Checkout failed. Please try again.");
+      setError(message);
     } finally {
       setPurchasingPlan(null);
     }

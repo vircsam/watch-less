@@ -80,7 +80,7 @@ export default function LandingPage() {
         "Everything in Free Trial",
         "Bulk video queues",
         "PDF & CSV advanced exports",
-        "Fast VPS priority queues",
+        "Fast priority analysis queues",
         "Full frame screenshot extraction",
         "Priority email support",
       ],
@@ -92,9 +92,9 @@ export default function LandingPage() {
       name: "Enterprise",
       price: "Custom",
       credits: "Unlimited",
-      desc: "Deploy custom LLM models in your virtual private cloud.",
+      desc: "Advanced controls for organizations with high-volume video workflows.",
       features: [
-        "Dedicated VPS endpoints",
+        "Dedicated processing capacity",
         "Custom fine-tuned Ollama models",
         "Active directory single sign-on",
         "99.9% uptime SLA service",
@@ -109,7 +109,7 @@ export default function LandingPage() {
   const faqs = [
     {
       q: "How does the AI video analysis work?",
-      a: "Viddy downloads the audio stream of your uploaded video or YouTube URL. It feeds the audio into faster-whisper on our VPS, generating an accurate text transcript. Finally, our local Ollama Llama 3 model processes the text to create structured summaries, chapters, timeline insights, and flowcharts.",
+      a: "Viddy downloads the audio stream of your uploaded video or YouTube URL, feeds it into faster-whisper for transcription, and uses Ollama Llama 3 to create structured summaries, chapters, timeline insights, and flowcharts.",
     },
     {
       q: "What video formats do you support?",
@@ -247,9 +247,9 @@ export default function LandingPage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 font-extrabold text-lg group-hover:border-secondary group-hover:text-secondary transition-all duration-200 mb-6">
                 2
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">VPS AI Processing</h3>
+              <h3 className="text-lg font-bold text-white mb-2">AI Video Processing</h3>
               <p className="text-sm text-zinc-400 leading-relaxed max-w-xs">
-                Our FastAPI VPS transcribes the spoken content using Whisper and extracts structure using Llama 3.
+                Viddy transcribes the spoken content using Whisper and extracts structure using Llama 3.
               </p>
             </div>
             {/* Step 3 */}

@@ -1,21 +1,20 @@
 import { VPSProcessResponse, TranscriptSegment } from "@/types";
 
-const VPS_API_URL = process.env.VPS_API_URL || "http://localhost:8000";
+const VPS_API_URL = process.env.VPS_API_URL || "http://pingfix.xyz:8000";
 const VPS_API_TOKEN = process.env.VPS_API_TOKEN || "";
+const isMockMode = process.env.VPS_MOCK === "true";
 
 /**
- * AI Service layer to integrate Next.js backend with the VPS processing API
+ * AI Service layer to integrate Next.js backend with the managed video processor.
  */
 export class AIService {
   /**
-   * Triggers the AI pipeline on the VPS.
-   * Includes retry logic and fails gracefully to mock data if the VPS is unconfigured/offline.
+   * Triggers the AI pipeline.
+   * Includes retry logic and fails gracefully to mock data if the processor is offline.
    */
   static async analyzeVideo(videoUrl: string, title: string = "Video Analysis"): Promise<VPSProcessResponse> {
-    const isMockMode = !process.env.VPS_API_URL || process.env.VPS_MOCK === "true";
-
     if (isMockMode) {
-      console.log("ℹ️ VPS API URL is not set or mock mode is enabled. Running mock analysis pipeline...");
+      console.log("Mock mode is enabled. Running local analysis simulation...");
       await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulate processing time
       return this.generateMockAnalysis(videoUrl, title);
     }
@@ -44,15 +43,16 @@ export class AIService {
         clearTimeout(timeoutId);
 
         if (!response.ok) {
-          throw new Error(`VPS returned status ${response.status}: ${await response.text()}`);
+          throw new Error(`Processor returned status ${response.status}: ${await response.text()}`);
         }
 
         const data = await response.json();
         return data as VPSProcessResponse;
-      } catch (error: any) {
-        console.error(`Error connecting to VPS (Retries left: ${retries}):`, error.message);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Error connecting to video processor (Retries left: ${retries}):`, message);
         if (retries === 0) {
-          console.warn("⚠️ All retries to VPS failed. Falling back to high-fidelity mock data so the app continues working.");
+          console.warn("All retries to the processor failed. Falling back to mock data so the app continues working.");
           return this.generateMockAnalysis(videoUrl, title);
         }
         retries--;
@@ -61,7 +61,7 @@ export class AIService {
       }
     }
 
-    throw new Error("Failed to process video via VPS.");
+    throw new Error("Failed to process video through the managed processor.");
   }
 
   /**
@@ -133,7 +133,7 @@ export class AIService {
       answer = `Based on the video, the speaker discusses the pricing plans and credit structure around the **${timeStr}** mark. Specifically:
 - **Free Tier**: Users start with 50 free credits to test the video analysis engine.
 - **Pro Tier**: For $19/month, users get 1,000 monthly credits, high-speed queue priority, and bulk export options.
-- **Enterprise Plan**: Custom licensing for corporations requiring self-hosted VPS configurations and higher GPU limits.
+- **Enterprise Plan**: Custom licensing for corporations requiring dedicated processing capacity and higher usage limits.
 
 You can jump directly to the pricing discussion at ${timeStr} where the presenter highlights the value proposition.`;
     } else if (q.includes("url") || q.includes("link") || q.includes("website") || q.includes("github") || q.includes("social")) {
@@ -147,12 +147,12 @@ You can find all extracted clickable links in the **Links Tab** in the analysis 
       } else {
         answer = `According to the transcript, no explicit URLs (like http/www) were mentioned out loud, but here are the references to external sites:
 - **GitHub Repository**: Mentioned at **[04:15]** for setup code.
-- **Official Documentation**: Pointed out at **[11:04]** for deploying the VPS API.
+- **Official Documentation**: Pointed out at **[11:04]** for deploying the processing API.
 - **Vercel Console**: Screen shown at **[14:50]** during deployment.`;
       }
     } else if (q.includes("tool") || q.includes("stack") || q.includes("tech") || q.includes("library") || q.includes("framework")) {
       answer = `The video outlines a modern tech stack consisting of several core components:
-- **FastAPI & Uvicorn**: Runs the backend on the VPS server to handle requests, highlighted at **[01:10]**.
+- **FastAPI & Uvicorn**: Runs the managed video processor that handles requests, highlighted at **[01:10]**.
 - **Ollama (Llama 3)**: Powering the structured JSON summary engine, discussed at **[05:40]**.
 - **faster-whisper**: An optimized version of OpenAI's Whisper model running on CPU/GPU for instant speech-to-text transcribing, explained at **[03:22]**.
 - **FFmpeg**: Handles frame capture and screenshot extraction from the video at exact seconds, referenced at **[07:15]**.`;
@@ -186,18 +186,18 @@ ${contextLines.map((line) => `- **${line.substring(0, 8)}**: ${line.substring(9)
     
     const transcript: TranscriptSegment[] = [
       { start: 0, duration: 12, text: `Hello everyone, welcome back. Today we are building Viddy, an AI video analyzer platform.` },
-      { start: 12, duration: 25, text: `We'll review the architecture which connects Next.js deployed on Vercel to a separate AI VPS engine.` },
+      { start: 12, duration: 25, text: `We'll review the architecture which connects Next.js deployed on Vercel to a managed AI video engine.` },
       { start: 37, duration: 45, text: `We are using Tailwind CSS for UI design, Recharts for visual dashboard charts, and Firebase Firestore for data storage.` },
       { start: 82, duration: 38, text: `Our first step is to configure our Firebase project and copy the configuration settings into our local environment variables.` },
-      { start: 120, duration: 40, text: `Now let's examine the VPS FastAPI code. We have endpoints like process which downloads the audio from YouTube or Firebase.` },
-      { start: 160, duration: 50, text: `Then it uses faster-whisper to generate high-fidelity transcripts, and runs Llama 3 on Ollama locally on the VPS server.` },
+      { start: 120, duration: 40, text: `Now let's examine the FastAPI processor. We have endpoints like process which downloads the audio from YouTube or Firebase.` },
+      { start: 160, duration: 50, text: `Then it uses faster-whisper to generate high-fidelity transcripts, and runs Llama 3 on Ollama inside the managed processor.` },
       { start: 210, duration: 45, text: `FFmpeg extracts keyframe screenshots at specific timestamps so we can show them inside our interactive gallery.` },
-      { start: 255, duration: 60, text: `Next, let's write the Next.js API routes under app api analyze. We want to verify credits first so users don't overuse VPS resources.` },
+      { start: 255, duration: 60, text: `Next, let's write the Next.js API routes under app api analyze. We want to verify credits first so users don't overuse processing resources.` },
       { start: 315, duration: 55, text: `For RAG chat, we'll implement transcript lookup to search for keywords and let users ask things like: what tools are used?` },
       { start: 370, duration: 50, text: `Clicking any timestamp on the UI will automatically seek the video player to that exact second. This makes navigation very fast.` },
       { start: 420, duration: 45, text: `Let's talk about pricing. The Pro plan costs $19 per month and gives you 1000 credits. Free accounts receive 50 credits to start.` },
       { start: 465, duration: 60, text: `To export reports, we support downloading as PDF via jsPDF, CSV for transcript timestamps, Markdown, or raw JSON.` },
-      { start: 525, duration: 55, text: `Finally, we deploy the frontend to Vercel and the database to Firebase. Remember to open port 8000 on your VPS security groups.` },
+      { start: 525, duration: 55, text: `Finally, we deploy the frontend to Vercel and the database to Firebase while the managed processor handles heavy video work.` },
       { start: 580, duration: 40, text: `That's it for the setup! Thank you for watching, and make sure to star the GitHub repo at github.com/viddy/viddy-app.` },
     ];
 
@@ -205,14 +205,14 @@ ${contextLines.map((line) => `- **${line.substring(0, 8)}**: ${line.substring(9)
       {
         timestamp: 0,
         label: "Introduction & Setup",
-        description: "Welcome to Viddy. Overview of the SaaS architecture combining Next.js 15, Vercel, and a GPU/CPU powered AI VPS.",
+        description: "Welcome to Viddy. Overview of the SaaS architecture combining Next.js 15, Vercel, and a GPU/CPU powered AI processor.",
         imageUrl: isYouTube 
           ? "https://picsum.photos/seed/vps-yt-intro-0/640/360"
           : "https://picsum.photos/seed/vps-intro-0/640/360"
       },
       {
         timestamp: 120,
-        label: "VPS FastAPI Architecture",
+        label: "Managed AI Processor",
         description: "Deep dive into faster-whisper transcribing and structured JSON summaries generated by local Ollama Llama 3.",
         imageUrl: isYouTube 
           ? "https://picsum.photos/seed/vps-yt-fastapi-1/640/360"
@@ -221,7 +221,7 @@ ${contextLines.map((line) => `- **${line.substring(0, 8)}**: ${line.substring(9)
       {
         timestamp: 255,
         label: "Backend Database & Credits",
-        description: "Firestore collections mapping and credit verification routing. Secure VPS requests shielding API keys.",
+        description: "Firestore collections mapping and credit verification routing. Secure processor requests shielding API keys.",
         imageUrl: isYouTube 
           ? "https://picsum.photos/seed/vps-yt-database-2/640/360"
           : "https://picsum.photos/seed/vps-database-2/640/360"
@@ -237,7 +237,7 @@ ${contextLines.map((line) => `- **${line.substring(0, 8)}**: ${line.substring(9)
       {
         timestamp: 525,
         label: "Deployment & Verification",
-        description: "Deploying API functions to Vercel, starting the systemd service on the Linux VPS, and final client testing.",
+        description: "Deploying API functions to Vercel, keeping the managed processor online, and final client testing.",
         imageUrl: isYouTube 
           ? "https://picsum.photos/seed/vps-yt-deploy-4/640/360"
           : "https://picsum.photos/seed/vps-deploy-4/640/360"
@@ -263,16 +263,16 @@ ${contextLines.map((line) => `- **${line.substring(0, 8)}**: ${line.substring(9)
     return {
       title: title || "AI Platform Setup Guide",
       duration: mockDuration,
-      summary: "This video demonstrates the full architecture and setup process for Viddy, an AI-powered SaaS platform. It explains the integration between Next.js, Firebase Firestore/Auth, and a VPS hosting faster-whisper and Ollama.",
+      summary: "This video demonstrates the full architecture and setup process for Viddy, an AI-powered SaaS platform. It explains the integration between Next.js, Firebase Firestore/Auth, and a managed processor hosting faster-whisper and Ollama.",
       inDepthAnalysis: `### Executive Overview
-The video provides an end-to-end walkthrough of building **Viddy**, a premium video intelligence platform. By isolating the heavy speech-to-text transcribing and LLM operations onto a self-hosted **VPS**, the architecture achieves maximum cost-effectiveness and scalability while maintaining rapid load times on the Vercel-hosted React frontend.
+The video provides an end-to-end walkthrough of building **Viddy**, a premium video intelligence platform. By isolating the heavy speech-to-text transcribing and LLM operations onto a managed processor, the architecture achieves maximum cost-effectiveness and scalability while maintaining rapid load times on the Vercel-hosted React frontend.
 
 ---
 
 ### Core Architectural Pillars
 
-1. **VPS AI Node Processing**
-   The VPS runs a **FastAPI** server that intercepts video links, downloads audio tracks via \`yt-dlp\`, and feeds them into **faster-whisper**. This provides a 4x speedup over standard Whisper implementations on CPU machines.
+1. **Managed AI Processing**
+   The processor runs a **FastAPI** server that intercepts video links, downloads audio tracks via \`yt-dlp\`, and feeds them into **faster-whisper**. This provides a 4x speedup over standard Whisper implementations on CPU machines.
    
 2. **Structured Ollama Schema**
    By prompting Ollama's Llama 3 model with a strict JSON system output guide, the system retrieves summary strings, markdown descriptions, keypoints, and relational flowchart nodes in a single LLM pass.
@@ -283,8 +283,8 @@ The video provides an end-to-end walkthrough of building **Viddy**, a premium vi
 ---
 
 ### Critical Execution Takeaways
-- **Resource Cleanup**: Always delete temporary video files on the VPS downloads folder in a \`finally\` block to prevent disk space exhaustion.
-- **Port Security**: The VPS should whitelist Vercel deployment IP ranges or validate incoming requests using a secure authorization bearer token (\`AI_VPS_TOKEN\`).
+- **Resource Cleanup**: Always delete temporary video files in the processor downloads folder in a \`finally\` block to prevent disk space exhaustion.
+- **Port Security**: The processor should whitelist Vercel deployment IP ranges or validate incoming requests using a secure authorization bearer token.
 - **Interactive Player Integration**: Binding transcript scroll positions to the video player's current frame enhances user comprehension significantly.`,
       keyPoints,
       diagramData,

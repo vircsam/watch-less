@@ -6,23 +6,33 @@ import Link from "next/link";
 import { useAppStore } from "@/store";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import SidebarComponent from "@/components/Sidebar";
-import { Play } from "lucide-react";
 import { 
   UploadCloud, 
   Link2, 
+  Play,
   ArrowRight, 
-  Coins, 
   Sparkles, 
-  Loader2, 
   AlertCircle, 
-  CheckCircle,
-  FileVideo
+  FileVideo,
+  Gauge,
+  ListChecks
 } from "lucide-react";
+
+const processingStages = [
+  "Preparing the video analysis engine...",
+  "Downloading audio stream from source URL (yt-dlp)...",
+  "Running faster-whisper speech-to-text transcription...",
+  "Speech transcribed. Building query prompt context...",
+  "Running Ollama Llama 3 to generate summaries, chapters, & flowcharts...",
+  "Capturing key video frames with FFmpeg...",
+  "Synchronizing Firestore entries & updating credit balances...",
+  "Finishing up report..."
+];
 
 export default function UploadPage() {
   useAuthRedirect();
   const router = useRouter();
-  const { user, addVideo, fetchProfile } = useAppStore();
+  const { user, fetchProfile } = useAppStore();
   
   const [activeTab, setActiveTab] = useState<"file" | "youtube" | "url">("file");
   const [youtubeUrl, setYoutubeUrl] = useState("");
@@ -35,18 +45,6 @@ export default function UploadPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progressStage, setProgressStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
-
-  // Stages of pipeline logs to show
-  const processingStages = [
-    "Connecting to Viddy AI VPS Core...",
-    "Downloading audio stream from source URL (yt-dlp)...",
-    "Running faster-whisper speech-to-text transcription...",
-    "Speech transcribed. Building query prompt context...",
-    "Running Ollama Llama 3 to generate summaries, chapters, & flowcharts...",
-    "Executing FFmpeg keyframe screenshot captures on VPS...",
-    "Synchronizing Firestore entries & updating credit balances...",
-    "Finishing up report..."
-  ];
 
   // Rotate through loading logs
   useEffect(() => {
@@ -82,7 +80,7 @@ export default function UploadPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "VPS pipeline failed to process video.");
+        throw new Error(errorData.error || "The analysis engine could not process this video.");
       }
 
       const data = await response.json();
@@ -92,9 +90,10 @@ export default function UploadPage() {
 
       // Redirect to detailed analysis screen
       router.push(`/analysis/${data.videoId}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to analyze video. Check connections and try again.";
       console.error(err);
-      setError(err.message || "Failed to analyze video. Check connections and try again.");
+      setError(message);
       setIsProcessing(false);
     }
   };
@@ -115,8 +114,7 @@ export default function UploadPage() {
     e.preventDefault();
     if (!file) return;
     
-    // Simulate uploading file to Firebase Storage
-    // Generating mock url for VPS analysis
+    // Simulate uploading file to Firebase Storage.
     const mockFileUrl = "https://www.w3schools.com/html/mov_bbb.mp4"; // standard fallback direct video file link
     triggerAnalysis(mockFileUrl, videoTitle.trim() || file.name.split(".")[0]);
   };
@@ -158,16 +156,29 @@ export default function UploadPage() {
 
   return (
     <div className="flex-1 flex bg-background min-h-[calc(100vh-4rem)]">
-      {/* Navigation Sidebar */}
       <SidebarComponent />
 
-      {/* Main Panel */}
-      <div className="flex-1 p-6 md:p-8 overflow-y-auto max-w-4xl mx-auto w-full space-y-8">
+      <div className="flex-1 p-6 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full space-y-8">
         
-        {/* Header Titles */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Analyze video workspace</h1>
-          <p className="text-sm text-zinc-400 mt-1">Upload a direct video asset or paste a YouTube URL to get started.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">New analysis</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Analyze a video</h1>
+            <p className="text-sm text-zinc-400 mt-1">Upload a file, paste a YouTube link, or use a direct video URL.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4">
+              <Gauge className="h-4.5 w-4.5 text-secondary mb-2" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Cost</p>
+              <p className="text-sm font-bold text-white mt-1">10 credits</p>
+            </div>
+            <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4">
+              <ListChecks className="h-4.5 w-4.5 text-accent mb-2" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Output</p>
+              <p className="text-sm font-bold text-white mt-1">Report + chat</p>
+            </div>
+          </div>
         </div>
 
         {/* Check credit warnings */}
@@ -191,19 +202,19 @@ export default function UploadPage() {
 
         {/* Processing State Log UI */}
         {isProcessing ? (
-          <div className="rounded-2xl border border-white/5 bg-zinc-900/10 p-8 text-center flex flex-col items-center justify-center gap-6 py-16">
+          <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-8 text-center flex flex-col items-center justify-center gap-6 py-16">
             <div className="relative flex items-center justify-center">
               <div className="h-16 w-16 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
               <Sparkles className="h-6 w-6 text-primary absolute animate-pulse" />
             </div>
             
             <div className="space-y-2 max-w-md">
-              <h3 className="text-base font-bold text-white">Analyzing Video Assets...</h3>
+              <h3 className="text-base font-bold text-white">Analyzing video</h3>
               <p className="text-sm text-zinc-300 font-medium h-5 animate-pulse text-gradient-primary">
                 {processingStages[progressStage]}
               </p>
               <p className="text-xs text-zinc-500 max-w-xs mx-auto leading-relaxed pt-3">
-                Do not close this window. Processing takes approximately 30-90 seconds depending on the length of the video file.
+                Processing time depends on the length and source of the video.
               </p>
             </div>
           </div>
@@ -216,7 +227,6 @@ export default function UploadPage() {
               </div>
             )}
 
-            {/* Config Title */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
                 Video Analysis Title (Optional)
@@ -230,31 +240,33 @@ export default function UploadPage() {
               />
             </div>
 
-            {/* Tabs Control */}
-            <div className="flex border-b border-white/5 gap-6">
+            <div className="flex border-b border-white/5 gap-6 overflow-x-auto">
               <button
                 onClick={() => { setActiveTab("file"); setError(null); }}
-                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 ${
+                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 flex items-center gap-2 whitespace-nowrap ${
                   activeTab === "file" ? "border-primary text-white" : "border-transparent text-zinc-500 hover:text-white"
                 }`}
               >
-                Upload Video File
+                <FileVideo className="h-4 w-4" />
+                <span>Upload File</span>
               </button>
               <button
                 onClick={() => { setActiveTab("youtube"); setError(null); }}
-                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 ${
+                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 flex items-center gap-2 whitespace-nowrap ${
                   activeTab === "youtube" ? "border-primary text-white" : "border-transparent text-zinc-500 hover:text-white"
                 }`}
               >
-                YouTube URL
+                <Play className="h-4 w-4" />
+                <span>YouTube</span>
               </button>
               <button
                 onClick={() => { setActiveTab("url"); setError(null); }}
-                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 ${
+                className={`pb-3 text-sm font-semibold transition-all cursor-pointer border-b-2 flex items-center gap-2 whitespace-nowrap ${
                   activeTab === "url" ? "border-primary text-white" : "border-transparent text-zinc-500 hover:text-white"
                 }`}
               >
-                Direct Video Link
+                <Link2 className="h-4 w-4" />
+                <span>Direct Link</span>
               </button>
             </div>
 
@@ -299,7 +311,7 @@ export default function UploadPage() {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <p className="text-sm font-bold text-white">Drag &amp; drop video file here</p>
+                      <p className="text-sm font-bold text-white">Drop a video file here</p>
                       <p className="text-xs text-zinc-500">
                         Supports MP4, MOV, MKV, or WEBM (up to 200MB)
                       </p>
@@ -318,7 +330,7 @@ export default function UploadPage() {
                   disabled={!file || (user && user.credits < 10)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/95 text-white py-3 text-sm font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  <span>Upload &amp; Analyze Video (Deducts 10 Credits)</span>
+                  <span>Analyze Uploaded Video</span>
                   <ArrowRight className="h-4.5 w-4.5" />
                 </button>
               </form>
@@ -352,7 +364,7 @@ export default function UploadPage() {
                   disabled={!youtubeUrl.trim() || (user && user.credits < 10)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/95 text-white py-3 text-sm font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  <span>Process YouTube Video (Deducts 10 Credits)</span>
+                  <span>Analyze YouTube Video</span>
                   <ArrowRight className="h-4.5 w-4.5" />
                 </button>
               </form>
@@ -386,7 +398,7 @@ export default function UploadPage() {
                   disabled={!directUrl.trim() || (user && user.credits < 10)}
                   className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/95 text-white py-3 text-sm font-semibold shadow-lg shadow-primary/20 disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  <span>Process Video Link (Deducts 10 Credits)</span>
+                  <span>Analyze Video Link</span>
                   <ArrowRight className="h-4.5 w-4.5" />
                 </button>
               </form>

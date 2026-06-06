@@ -6,17 +6,17 @@ import { useAppStore } from "@/store";
 import { useAuthRedirect } from "@/hooks/useAuthRedirect";
 import Link from "next/link";
 import { 
-  Video, 
+  Video,
   Clock, 
-  Coins, 
-  Layers, 
   Trash2, 
   ExternalLink, 
   Search, 
   Play, 
   Loader2, 
   Plus, 
-  AlertCircle 
+  MessageSquare,
+  Film,
+  WandSparkles
 } from "lucide-react";
 import SidebarComponent from "@/components/Sidebar";
 
@@ -26,7 +26,6 @@ export default function DashboardPage() {
   const { user, videos, fetchVideos, isLoading } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch videos on load
   useEffect(() => {
@@ -41,7 +40,6 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to delete this analysis? This action cannot be undone.")) return;
 
     setDeletingId(videoId);
-    setIsDeleting(true);
     try {
       const res = await fetch(`/api/videos?videoId=${videoId}`, {
         method: "DELETE",
@@ -57,7 +55,6 @@ export default function DashboardPage() {
       alert("Failed to delete video analysis.");
     } finally {
       setDeletingId(null);
-      setIsDeleting(false);
     }
   };
 
@@ -69,7 +66,7 @@ export default function DashboardPage() {
 
   // Simulated metrics
   const totalKeypoints = completedVideos.length * 5;
-  const totalUrlsExtracted = completedVideos.length * 2;
+  const chatReady = completedVideos.length;
 
   // Filtered List
   const filteredVideos = videos.filter((v) =>
@@ -99,17 +96,15 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 flex bg-background min-h-[calc(100vh-4rem)]">
-      {/* Sidebar Navigation */}
       <SidebarComponent />
 
-      {/* Main Panel Content */}
       <div className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-8">
         
-        {/* Header Title */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
           <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Video workspace</p>
             <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back, {user.name}</h1>
-            <p className="text-sm text-zinc-400 mt-1">Here is the intelligence breakdown of your media archive.</p>
+            <p className="text-sm text-zinc-400 mt-1">Review analyzed videos, open reports, and continue conversations.</p>
           </div>
           <Link
             href="/upload"
@@ -120,20 +115,17 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Stats Grid Counters */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Stats 1 */}
           <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Videos Analyzed</span>
-              <Video className="h-4.5 w-4.5 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Library</span>
+              <Film className="h-4.5 w-4.5 text-primary" />
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-white tracking-tight">{totalAnalyzed}</span>
               <span className="text-xs text-zinc-500 font-medium">videos</span>
             </div>
           </div>
-          {/* Stats 2 */}
           <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400 mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider">Time Analyzed</span>
@@ -144,31 +136,28 @@ export default function DashboardPage() {
               <span className="text-xs text-zinc-500 font-medium">minutes</span>
             </div>
           </div>
-          {/* Stats 3 */}
           <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">Insights Extracted</span>
-              <Layers className="h-4.5 w-4.5 text-accent" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Insights</span>
+              <WandSparkles className="h-4.5 w-4.5 text-accent" />
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-bold text-white tracking-tight">{totalKeypoints}</span>
               <span className="text-xs text-zinc-500 font-medium">milestones</span>
             </div>
           </div>
-          {/* Stats 4 */}
           <div className="rounded-xl border border-white/5 bg-zinc-900/20 p-4.5 flex flex-col justify-between">
             <div className="flex items-center justify-between text-zinc-400 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider">AI Credits</span>
-              <Coins className="h-4.5 w-4.5 text-emerald-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider">Chat Ready</span>
+              <MessageSquare className="h-4.5 w-4.5 text-emerald-400" />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-white tracking-tight">{user.credits}</span>
-              <span className="text-xs text-zinc-500 font-medium">credits</span>
+              <span className="text-2xl font-bold text-white tracking-tight">{chatReady}</span>
+              <span className="text-xs text-zinc-500 font-medium">videos</span>
             </div>
           </div>
         </div>
 
-        {/* History Search Header */}
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <h2 className="text-lg font-bold text-white tracking-wide">Analysis History</h2>
@@ -186,7 +175,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Videos Grid list */}
           {filteredVideos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVideos.map((video) => {
@@ -218,7 +206,6 @@ export default function DashboardPage() {
                         </div>
                       )}
                       
-                      {/* Play overlay for completed */}
                       {isCompleted && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
                           <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white shadow-lg">
@@ -227,7 +214,6 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Status pill overlay */}
                       <div className="absolute top-3 right-3 z-10">
                         {isCompleted && (
                           <span className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md">
@@ -247,7 +233,6 @@ export default function DashboardPage() {
                         )}
                       </div>
 
-                      {/* Duration stamp */}
                       {isCompleted && (
                         <div className="absolute bottom-2.5 right-2.5 bg-black/70 px-2 py-0.5 rounded text-[10px] font-semibold text-white">
                           {formatTime(video.duration)}
@@ -255,7 +240,6 @@ export default function DashboardPage() {
                       )}
                     </div>
 
-                    {/* Meta info */}
                     <div className="p-4.5 space-y-4">
                       <div className="space-y-1">
                         <h3 className="text-sm font-bold text-white tracking-wide truncate group-hover:text-primary transition-colors">
@@ -287,7 +271,6 @@ export default function DashboardPage() {
                           )}
                         </div>
 
-                        {/* Delete analysis trigger */}
                         <button
                           disabled={deletingId === video.id}
                           onClick={(e) => handleDelete(e, video.id)}
